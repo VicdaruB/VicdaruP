@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
+    "project_number": "3495377893",
     "project_id": "vicdaru-project",
-    "storage_bucket": "vicdaru-project.appspot.com"
+    "storage_bucket": "vicdaru-project.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:3495377893:android:0b01b7c2c945357e350d0c",
         "android_client_info": {
           "package_name": "com.aistudio.vicdaruproject.kvrmqz"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyTempKey0000000000000000000000000"
+          "current_key": "AIzaSyDWOTEYMJ3ilZCVoMKPG-O-dOKWI-k6XC0"
         }
       ],
       "services": {
