@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CustomCredential
-import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -35,9 +34,8 @@ class AuthHelper(
             } else {
                 Result.failure(IllegalStateException("Tipo de credencial no soportado para Google Sign-In"))
             }
-        } catch (e: GetCredentialCancellationException) {
-            Result.failure(Exception("Inicio de sesión cancelado"))
         } catch (e: GetCredentialException) {
+            // Captura cualquier error o cancelación de Credential Manager de forma segura
             Result.failure(e)
         } catch (e: Exception) {
             Result.failure(e)
