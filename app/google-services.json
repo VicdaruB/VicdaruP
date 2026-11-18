@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "000000000000",
-    "project_id": "vicdaru-temp",
-    "storage_bucket": "vicdaru-temp.appspot.com"
+    "project_id": "vicdaru-project",
+    "storage_bucket": "vicdaru-project.appspot.com"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
-          "package_name": "com.example.vicdaru"
+          "package_name": "com.aistudio.vicdaruproject.kvrmqz"
         }
       },
       "oauth_client": [],
@@ -27,4 +27,3 @@
   ],
   "configuration_version": "1"
 }
-
