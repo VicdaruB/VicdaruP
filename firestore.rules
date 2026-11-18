@@ -1,0 +1,425 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL HARDENED PRIMITIVES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    // --- VALIDATION HELPERS ---
+    function isValidUserSettings(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.darkMode is bool &&
+             data.morningQuoteEnabled is bool &&
+             data.morningHour is int && data.morningHour >= 0 && data.morningHour <= 23 &&
+             data.morningMinute is int && data.morningMinute >= 0 && data.morningMinute <= 59 &&
+             data.randomQuotesEnabled is bool &&
+             data.activeThemeAnime is string && data.activeThemeAnime.size() >= 1 && data.activeThemeAnime.size() <= 40 &&
+             data.selectedVisualizerProfileId is string && data.selectedVisualizerProfileId.size() <= 128 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidQuoteEntry(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.quoteText is string && data.quoteText.size() >= 1 && data.quoteText.size() <= 500 &&
+             data.animeKey is string && data.animeKey.size() >= 1 && data.animeKey.size() <= 40 &&
+             data.characterName is string && data.characterName.size() >= 1 && data.characterName.size() <= 80 &&
+             data.moodTag is string && data.moodTag.size() >= 1 && data.moodTag.size() <= 40 &&
+             data.imageUrl is string && data.imageUrl.size() <= 600 &&
+             (!('imageSource' in data) || (data.imageSource is string && data.imageSource.size() <= 80)) &&
+             data.favorite is bool &&
+             data.sourceType is string && data.sourceType in ['MORNING', 'RANDOM', 'MANUAL'] &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidHabitItem(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.animeTag is string && data.animeTag.size() >= 1 && data.animeTag.size() <= 40 &&
+             data.completedDates is list && data.completedDates.size() <= 400 &&
+             (data.completedDates.size() == 0 || (data.completedDates[0] is string && data.completedDates[0].size() <= 16)) &&
+             data.currentStreak is int && data.currentStreak >= 0 && data.currentStreak <= 10000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidVisualizerProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             data.baseAnimeKey is string && data.baseAnimeKey.size() >= 1 && data.baseAnimeKey.size() <= 40 &&
+             data.particleStyle is string && data.particleStyle.size() >= 1 && data.particleStyle.size() <= 30 &&
+             data.waveformStyle is string && data.waveformStyle.size() >= 1 && data.waveformStyle.size() <= 30 &&
+             data.ambientSound is string && data.ambientSound.size() >= 1 && data.ambientSound.size() <= 30 &&
+             data.sensitivity is number && data.sensitivity >= 0.2 && data.sensitivity <= 2.5 &&
+             data.primaryHex is string && data.primaryHex.size() >= 4 && data.primaryHex.size() <= 16 &&
+             data.secondaryHex is string && data.secondaryHex.size() >= 4 && data.secondaryHex.size() <= 16 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFriendLink(data, userId, friendUid) {
+      return data.userId is string && data.userId == userId &&
+             data.friendUid is string && data.friendUid == friendUid && data.friendUid != userId &&
+             data.friendCode is string && data.friendCode.size() >= 3 && data.friendCode.size() <= 20 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPublicProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.friendCode is string && data.friendCode.size() >= 3 && data.friendCode.size() <= 20 &&
+             data.selectedAvatarId is string && data.selectedAvatarId.size() >= 1 && data.selectedAvatarId.size() <= 40 &&
+             (!('profilePhotoBase64' in data) || (data.profilePhotoBase64 is string && data.profilePhotoBase64.size() <= 45000)) &&
+             data.activeThemeAnime is string && data.activeThemeAnime.size() >= 1 && data.activeThemeAnime.size() <= 40 &&
+             data.activityLevel is int && data.activityLevel >= 1 && data.activityLevel <= 999 &&
+             data.totalFocusMinutes is int && data.totalFocusMinutes >= 0 && data.totalFocusMinutes <= 1000000 &&
+             data.climberBestMeters is int && data.climberBestMeters >= 0 && data.climberBestMeters <= 1000000 &&
+             data.dailyChallengeScore is int && data.dailyChallengeScore >= 0 && data.dailyChallengeScore <= 1000000 &&
+             data.dailyChallengeDate is string && data.dailyChallengeDate.size() <= 20 &&
+             (!('quotesCount' in data) || (data.quotesCount is int && data.quotesCount >= 0 && data.quotesCount <= 1000000)) &&
+             (!('favoritesCount' in data) || (data.favoritesCount is int && data.favoritesCount >= 0 && data.favoritesCount <= 1000000)) &&
+             (!('habitsCompletedTotal' in data) || (data.habitsCompletedTotal is int && data.habitsCompletedTotal >= 0 && data.habitsCompletedTotal <= 1000000)) &&
+             (!('bestHabitStreak' in data) || (data.bestHabitStreak is int && data.bestHabitStreak >= 0 && data.bestHabitStreak <= 100000)) &&
+             (!('dailyChallengesCompleted' in data) || (data.dailyChallengesCompleted is int && data.dailyChallengesCompleted >= 0 && data.dailyChallengesCompleted <= 100000)) &&
+             (!('duoClimberWins' in data) || (data.duoClimberWins is int && data.duoClimberWins >= 0 && data.duoClimberWins <= 100000)) &&
+             (!('duoMusicWins' in data) || (data.duoMusicWins is int && data.duoMusicWins >= 0 && data.duoMusicWins <= 100000)) &&
+             (!('friendsCount' in data) || (data.friendsCount is int && data.friendsCount >= 0 && data.friendsCount <= 10000)) &&
+             (!('maxEmotionalLevel' in data) || (data.maxEmotionalLevel is int && data.maxEmotionalLevel >= 1 && data.maxEmotionalLevel <= 999)) &&
+             data.medals is list && data.medals.size() <= 60 &&
+             (data.medals.size() == 0 || (data.medals[0] is string && data.medals[0].size() <= 40)) &&
+             data.unlockedAvatars is list && data.unlockedAvatars.size() <= 20 &&
+             (data.unlockedAvatars.size() == 0 || (data.unlockedAvatars[0] is string && data.unlockedAvatars[0].size() <= 40)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFriendCodeLookup(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFriendRequest(data) {
+      return data.fromUid is string && data.fromUid.size() >= 1 && data.fromUid.size() <= 128 &&
+             data.toUid is string && data.toUid.size() >= 1 && data.toUid.size() <= 128 &&
+             data.fromUid != data.toUid &&
+             data.fromDisplayName is string && data.fromDisplayName.size() >= 1 && data.fromDisplayName.size() <= 60 &&
+             data.fromFriendCode is string && data.fromFriendCode.size() >= 3 && data.fromFriendCode.size() <= 20 &&
+             data.status is string && data.status in ['pending', 'accepted', 'declined'] &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidGameRoom(data) {
+      return data.roomCode is string && data.roomCode.size() >= 4 && data.roomCode.size() <= 12 &&
+             data.gameType is string && data.gameType in ['CLIMBER', 'MUSIC_FOCUS'] &&
+             data.status is string && data.status in ['waiting', 'active', 'finished'] &&
+             data.hostUid is string && data.hostUid.size() >= 1 && data.hostUid.size() <= 128 &&
+             data.hostName is string && data.hostName.size() >= 1 && data.hostName.size() <= 60 &&
+             data.hostAvatarId is string && data.hostAvatarId.size() >= 1 && data.hostAvatarId.size() <= 40 &&
+             data.hostProgress is int && data.hostProgress >= 0 && data.hostProgress <= 100000 &&
+             data.hostReady is bool &&
+             data.guestUid is string && data.guestUid.size() <= 128 &&
+             data.guestName is string && data.guestName.size() <= 60 &&
+             data.guestAvatarId is string && data.guestAvatarId.size() <= 40 &&
+             data.guestProgress is int && data.guestProgress >= 0 && data.guestProgress <= 100000 &&
+             data.guestReady is bool &&
+             data.targetGoal is int && data.targetGoal >= 10 && data.targetGoal <= 100000 &&
+             data.sharedRewardGranted is bool &&
+             data.invitedUid is string && data.invitedUid.size() <= 128 &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 2 &&
+             data.participantUids[0] is string &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFriendChat(data) {
+      return data.participantUids is list && data.participantUids.size() == 2 &&
+             data.participantUids[0] is string && data.participantUids[1] is string &&
+             data.participantUids[0] != data.participantUids[1] &&
+             data.goodVibePoints is int && data.goodVibePoints >= 0 && data.goodVibePoints < 100 &&
+             data.emotionalLevel is int && data.emotionalLevel >= 1 && data.emotionalLevel <= 999 &&
+             data.totalMessages is int && data.totalMessages >= 0 && data.totalMessages <= 1000000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFriendChatMessage(data) {
+      return data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 60 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 300 &&
+             data.vibeBoost is int && data.vibeBoost >= 1 && data.vibeBoost <= 50 &&
+             data.participantUids is list && data.participantUids.size() == 2 &&
+             data.participantUids[0] is string && data.participantUids[1] is string &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // --- USER PRIVATE SETTINGS & SUBCOLLECTIONS ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'darkMode', 'morningQuoteEnabled', 'morningHour', 'morningMinute', 'randomQuotesEnabled', 'activeThemeAnime', 'selectedVisualizerProfileId', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'darkMode', 'morningQuoteEnabled', 'morningHour', 'morningMinute', 'randomQuotesEnabled', 'activeThemeAnime', 'selectedVisualizerProfileId', 'createdAt', 'updatedAt']) &&
+                       isValidUserSettings(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) &&
+                       isValidUserSettings(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['darkMode', 'morningQuoteEnabled', 'morningHour', 'morningMinute', 'randomQuotesEnabled', 'activeThemeAnime', 'selectedVisualizerProfileId', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /quotes/{quoteId} {
+        allow get: if isOwner(userId) && isValidId(quoteId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(quoteId) &&
+                         incoming().keys().hasAll(['userId', 'quoteText', 'animeKey', 'characterName', 'moodTag', 'imageUrl', 'favorite', 'sourceType', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'quoteText', 'animeKey', 'characterName', 'moodTag', 'imageUrl', 'imageSource', 'favorite', 'sourceType', 'createdAt', 'updatedAt']) &&
+                         isValidQuoteEntry(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(quoteId) &&
+                         isValidQuoteEntry(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['favorite', 'imageUrl', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(quoteId);
+      }
+
+      match /habits/{habitId} {
+        allow get: if isOwner(userId) && isValidId(habitId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(habitId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'animeTag', 'completedDates', 'currentStreak', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'animeTag', 'completedDates', 'currentStreak', 'createdAt', 'updatedAt']) &&
+                         isValidHabitItem(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(habitId) &&
+                         isValidHabitItem(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'animeTag', 'completedDates', 'currentStreak', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(habitId);
+      }
+
+      match /visualizerProfiles/{profileId} {
+        allow get: if isOwner(userId) && isValidId(profileId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(profileId) &&
+                         incoming().keys().hasAll(['userId', 'name', 'baseAnimeKey', 'particleStyle', 'waveformStyle', 'ambientSound', 'sensitivity', 'primaryHex', 'secondaryHex', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'name', 'baseAnimeKey', 'particleStyle', 'waveformStyle', 'ambientSound', 'sensitivity', 'primaryHex', 'secondaryHex', 'createdAt', 'updatedAt']) &&
+                         isValidVisualizerProfile(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(profileId) &&
+                         isValidVisualizerProfile(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'baseAnimeKey', 'particleStyle', 'waveformStyle', 'ambientSound', 'sensitivity', 'primaryHex', 'secondaryHex', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(profileId);
+      }
+
+      match /friends/{friendUid} {
+        allow get: if isOwner(userId) && isValidId(friendUid);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(friendUid) &&
+                         incoming().keys().hasAll(['userId', 'friendUid', 'friendCode', 'displayName', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'friendUid', 'friendCode', 'displayName', 'createdAt', 'updatedAt']) &&
+                         isValidFriendLink(incoming(), userId, friendUid);
+        allow update: if isOwner(userId) && isValidId(friendUid) &&
+                         isValidFriendLink(incoming(), userId, friendUid) &&
+                         incoming().userId == existing().userId &&
+                         incoming().friendUid == existing().friendUid &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['friendCode', 'displayName', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(friendUid);
+      }
+    }
+
+    // --- PUBLIC PROFILE CARDS (NO PII) ---
+    match /publicProfiles/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'friendCode', 'selectedAvatarId', 'activeThemeAnime', 'activityLevel', 'totalFocusMinutes', 'climberBestMeters', 'dailyChallengeScore', 'dailyChallengeDate', 'medals', 'unlockedAvatars', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'friendCode', 'selectedAvatarId', 'profilePhotoBase64', 'activeThemeAnime', 'activityLevel', 'totalFocusMinutes', 'climberBestMeters', 'dailyChallengeScore', 'dailyChallengeDate', 'quotesCount', 'favoritesCount', 'habitsCompletedTotal', 'bestHabitStreak', 'dailyChallengesCompleted', 'duoClimberWins', 'duoMusicWins', 'friendsCount', 'maxEmotionalLevel', 'medals', 'unlockedAvatars', 'createdAt', 'updatedAt']) &&
+                       isValidPublicProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) &&
+                       isValidPublicProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'friendCode', 'selectedAvatarId', 'profilePhotoBase64', 'activeThemeAnime', 'activityLevel', 'totalFocusMinutes', 'climberBestMeters', 'dailyChallengeScore', 'dailyChallengeDate', 'quotesCount', 'favoritesCount', 'habitsCompletedTotal', 'bestHabitStreak', 'dailyChallengesCompleted', 'duoClimberWins', 'duoMusicWins', 'friendsCount', 'maxEmotionalLevel', 'medals', 'unlockedAvatars', 'updatedAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // --- FRIEND CODE LOOKUP (GET ONLY) ---
+    match /friendCodes/{friendCode} {
+      allow get: if isSignedIn() && isValidId(friendCode);
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(friendCode) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'createdAt', 'updatedAt']) &&
+                       isValidFriendCodeLookup(incoming());
+      allow update: if isSignedIn() && isValidId(friendCode) &&
+                       existing().userId == request.auth.uid &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidFriendCodeLookup(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(friendCode) && existing().userId == request.auth.uid;
+    }
+
+    // --- FRIEND REQUESTS ---
+    match /friendRequests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId) &&
+                    (existing().fromUid == request.auth.uid || existing().toUid == request.auth.uid);
+      allow list: if isSignedIn() &&
+                     (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(requestId) &&
+                       incoming().fromUid == request.auth.uid &&
+                       incoming().status == 'pending' &&
+                       incoming().keys().hasAll(['fromUid', 'toUid', 'fromDisplayName', 'fromFriendCode', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['fromUid', 'toUid', 'fromDisplayName', 'fromFriendCode', 'status', 'createdAt', 'updatedAt']) &&
+                       isValidFriendRequest(incoming()) &&
+                       exists(/databases/$(database)/documents/publicProfiles/$(incoming().toUid));
+      allow update: if isSignedIn() && isValidId(requestId) &&
+                       existing().status == 'pending' &&
+                       request.auth.uid == existing().toUid &&
+                       isValidFriendRequest(incoming()) &&
+                       incoming().status in ['accepted', 'declined'] &&
+                       incoming().fromUid == existing().fromUid &&
+                       incoming().toUid == existing().toUid &&
+                       incoming().fromDisplayName == existing().fromDisplayName &&
+                       incoming().fromFriendCode == existing().fromFriendCode &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(requestId) &&
+                       (existing().fromUid == request.auth.uid || existing().toUid == request.auth.uid);
+    }
+
+    // --- REALTIME MULTIPLAYER GAME ROOMS ---
+    match /gameRooms/{roomId} {
+      allow get: if isSignedIn() && isValidId(roomId) &&
+                    (existing().status == 'waiting' ||
+                     request.auth.uid in existing().participantUids ||
+                     existing().invitedUid == request.auth.uid);
+      allow list: if isSignedIn() &&
+                     (request.auth.uid in resource.data.participantUids ||
+                      resource.data.invitedUid == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(roomId) &&
+                       incoming().hostUid == request.auth.uid &&
+                       incoming().guestUid == '' &&
+                       incoming().status == 'waiting' &&
+                       incoming().participantUids.size() == 1 &&
+                       incoming().participantUids[0] == request.auth.uid &&
+                       incoming().keys().hasAll(['roomCode', 'gameType', 'status', 'hostUid', 'hostName', 'hostAvatarId', 'hostProgress', 'hostReady', 'guestUid', 'guestName', 'guestAvatarId', 'guestProgress', 'guestReady', 'targetGoal', 'sharedRewardGranted', 'invitedUid', 'participantUids', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['roomCode', 'gameType', 'status', 'hostUid', 'hostName', 'hostAvatarId', 'hostProgress', 'hostReady', 'guestUid', 'guestName', 'guestAvatarId', 'guestProgress', 'guestReady', 'targetGoal', 'sharedRewardGranted', 'invitedUid', 'participantUids', 'createdAt', 'updatedAt']) &&
+                       isValidGameRoom(incoming());
+      allow update: if isSignedIn() && isValidId(roomId) &&
+                       existing().status != 'finished' &&
+                       isValidGameRoom(incoming()) &&
+                       incoming().roomCode == existing().roomCode &&
+                       incoming().gameType == existing().gameType &&
+                       incoming().targetGoal == existing().targetGoal &&
+                       incoming().invitedUid == existing().invitedUid &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action 1: Guest joins waiting room
+                         (existing().status == 'waiting' &&
+                          existing().guestUid == '' &&
+                          request.auth.uid != existing().hostUid &&
+                          incoming().hostUid == existing().hostUid &&
+                          incoming().guestUid == request.auth.uid &&
+                          incoming().participantUids.size() == 2 &&
+                          existing().hostUid in incoming().participantUids &&
+                          request.auth.uid in incoming().participantUids &&
+                          incoming().status in ['waiting', 'active'] &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['guestUid', 'guestName', 'guestAvatarId', 'guestReady', 'participantUids', 'status', 'updatedAt'])) ||
+                         // Action 2: Host updates progress / ready / status / shared reward
+                         (request.auth.uid == existing().hostUid &&
+                          incoming().hostUid == existing().hostUid &&
+                          incoming().guestUid == existing().guestUid &&
+                          incoming().participantUids == existing().participantUids &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['hostProgress', 'hostReady', 'status', 'sharedRewardGranted', 'updatedAt'])) ||
+                         // Action 3: Guest updates progress / ready / status / shared reward
+                         (request.auth.uid == existing().guestUid &&
+                          incoming().hostUid == existing().hostUid &&
+                          incoming().guestUid == existing().guestUid &&
+                          incoming().participantUids == existing().participantUids &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['guestProgress', 'guestReady', 'status', 'sharedRewardGranted', 'updatedAt']))
+                       );
+      allow delete: if isSignedIn() && isValidId(roomId) &&
+                       request.auth.uid == existing().hostUid &&
+                       existing().status == 'waiting';
+    }
+
+    // --- LIVE FRIEND CHAT & GOOD VIBE COUNTER ---
+    match /friendChats/{chatId} {
+      allow get: if isSignedIn() && isValidId(chatId) &&
+                    ((resource == null && (chatId.matches('^' + request.auth.uid + '__.*') || chatId.matches('.*__' + request.auth.uid + '$'))) ||
+                     (resource != null && request.auth.uid in existing().participantUids));
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantUids;
+      allow create: if isSignedIn() && isValidId(chatId) &&
+                       request.auth.uid in incoming().participantUids &&
+                       incoming().goodVibePoints == 0 &&
+                       incoming().emotionalLevel == 1 &&
+                       incoming().totalMessages == 0 &&
+                       incoming().keys().hasAll(['participantUids', 'goodVibePoints', 'emotionalLevel', 'totalMessages', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['participantUids', 'goodVibePoints', 'emotionalLevel', 'totalMessages', 'createdAt', 'updatedAt']) &&
+                       isValidFriendChat(incoming());
+      allow update: if isSignedIn() && isValidId(chatId) &&
+                       request.auth.uid in existing().participantUids &&
+                       isValidFriendChat(incoming()) &&
+                       incoming().participantUids == existing().participantUids &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().totalMessages == existing().totalMessages + 1 &&
+                       incoming().emotionalLevel >= existing().emotionalLevel &&
+                       incoming().emotionalLevel <= existing().emotionalLevel + 1 &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['goodVibePoints', 'emotionalLevel', 'totalMessages', 'updatedAt']);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(chatId) && isValidId(messageId) &&
+                      request.auth.uid in existing().participantUids;
+        allow list: if isSignedIn() && isValidId(chatId) &&
+                       request.auth.uid in resource.data.participantUids;
+        allow create: if isSignedIn() && isValidId(chatId) && isValidId(messageId) &&
+                         incoming().senderUid == request.auth.uid &&
+                         request.auth.uid in incoming().participantUids &&
+                         exists(/databases/$(database)/documents/friendChats/$(chatId)) &&
+                         incoming().participantUids == get(/databases/$(database)/documents/friendChats/$(chatId)).data.participantUids &&
+                         incoming().keys().hasAll(['senderUid', 'senderName', 'text', 'vibeBoost', 'participantUids', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['senderUid', 'senderName', 'text', 'vibeBoost', 'participantUids', 'createdAt', 'updatedAt']) &&
+                         isValidFriendChatMessage(incoming());
+        allow update, delete: if false;
+      }
+    }
+  }
+}

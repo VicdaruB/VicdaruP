@@ -1,0 +1,250 @@
+{
+  "entities": {
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "Private user settings for theme, dark mode, and notification schedule.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "darkMode": { "type": "boolean", "description": "Whether night dark mode is active." },
+        "morningQuoteEnabled": { "type": "boolean", "description": "Daily morning quote notification toggle." },
+        "morningHour": { "type": "integer", "description": "Morning quote hour (0-23)." },
+        "morningMinute": { "type": "integer", "description": "Morning quote minute (0-59)." },
+        "randomQuotesEnabled": { "type": "boolean", "description": "Random daytime productive quotes toggle." },
+        "activeThemeAnime": { "type": "string", "description": "Anime key of the most recent quote driving the color palette." },
+        "selectedVisualizerProfileId": { "type": "string", "description": "Selected music visualizer profile ID." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp." }
+      },
+      "required": ["userId", "darkMode", "morningQuoteEnabled", "morningHour", "morningMinute", "randomQuotesEnabled", "activeThemeAnime", "selectedVisualizerProfileId", "createdAt", "updatedAt"]
+    },
+    "QuoteHistoryEntry": {
+      "title": "QuoteHistoryEntry",
+      "description": "Delivered or saved motivational anime quote with image URL and favorite state.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "quoteText": { "type": "string" },
+        "animeKey": { "type": "string" },
+        "characterName": { "type": "string" },
+        "moodTag": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "imageSource": { "type": "string", "description": "Origin gallery or fanart source of the image." },
+        "favorite": { "type": "boolean" },
+        "sourceType": { "type": "string", "enum": ["MORNING", "RANDOM", "MANUAL"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "quoteText", "animeKey", "characterName", "moodTag", "imageUrl", "favorite", "sourceType", "createdAt", "updatedAt"]
+    },
+    "HabitItem": {
+      "title": "HabitItem",
+      "description": "User daily habit with monthly completion dates for interactive progress visualizer.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "animeTag": { "type": "string" },
+        "completedDates": { "type": "array", "description": "ISO YYYY-MM-DD dates completed." },
+        "currentStreak": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "animeTag", "completedDates", "currentStreak", "createdAt", "updatedAt"]
+    },
+    "VisualizerProfile": {
+      "title": "VisualizerProfile",
+      "description": "Custom or character-based music visualizer and ambient soundscape profile.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "baseAnimeKey": { "type": "string" },
+        "particleStyle": { "type": "string" },
+        "waveformStyle": { "type": "string" },
+        "ambientSound": { "type": "string" },
+        "sensitivity": { "type": "number" },
+        "primaryHex": { "type": "string" },
+        "secondaryHex": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "baseAnimeKey", "particleStyle", "waveformStyle", "ambientSound", "sensitivity", "primaryHex", "secondaryHex", "createdAt", "updatedAt"]
+    },
+    "FriendLink": {
+      "title": "FriendLink",
+      "description": "Accepted friend link stored under the user's friends subcollection.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "friendUid": { "type": "string" },
+        "friendCode": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "friendUid", "friendCode", "displayName", "createdAt", "updatedAt"]
+    },
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "Non-PII public profile card for friend comparison, custom gallery photo, multi-level achievements, avatars, and daily challenges.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "friendCode": { "type": "string" },
+        "selectedAvatarId": { "type": "string" },
+        "profilePhotoBase64": { "type": "string", "description": "Compressed square JPEG Base64 string of custom gallery photo." },
+        "activeThemeAnime": { "type": "string" },
+        "activityLevel": { "type": "integer" },
+        "totalFocusMinutes": { "type": "integer" },
+        "climberBestMeters": { "type": "integer" },
+        "dailyChallengeScore": { "type": "integer" },
+        "dailyChallengeDate": { "type": "string" },
+        "quotesCount": { "type": "integer" },
+        "favoritesCount": { "type": "integer" },
+        "habitsCompletedTotal": { "type": "integer" },
+        "bestHabitStreak": { "type": "integer" },
+        "dailyChallengesCompleted": { "type": "integer" },
+        "duoClimberWins": { "type": "integer" },
+        "duoMusicWins": { "type": "integer" },
+        "friendsCount": { "type": "integer" },
+        "maxEmotionalLevel": { "type": "integer" },
+        "medals": { "type": "array" },
+        "unlockedAvatars": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "friendCode", "selectedAvatarId", "activeThemeAnime", "activityLevel", "totalFocusMinutes", "climberBestMeters", "dailyChallengeScore", "dailyChallengeDate", "medals", "unlockedAvatars", "createdAt", "updatedAt"]
+    },
+    "FriendCodeLookup": {
+      "title": "FriendCodeLookup",
+      "description": "Direct friend code to userId lookup entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "createdAt", "updatedAt"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "Bidirectional friend invitation between two users.",
+      "type": "object",
+      "properties": {
+        "fromUid": { "type": "string" },
+        "toUid": { "type": "string" },
+        "fromDisplayName": { "type": "string" },
+        "fromFriendCode": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUid", "toUid", "fromDisplayName", "fromFriendCode", "status", "createdAt", "updatedAt"]
+    },
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Real-time multiplayer session for Climber or Music Focus minigame.",
+      "type": "object",
+      "properties": {
+        "roomCode": { "type": "string" },
+        "gameType": { "type": "string", "enum": ["CLIMBER", "MUSIC_FOCUS"] },
+        "status": { "type": "string", "enum": ["waiting", "active", "finished"] },
+        "hostUid": { "type": "string" },
+        "hostName": { "type": "string" },
+        "hostAvatarId": { "type": "string" },
+        "hostProgress": { "type": "integer" },
+        "hostReady": { "type": "boolean" },
+        "guestUid": { "type": "string" },
+        "guestName": { "type": "string" },
+        "guestAvatarId": { "type": "string" },
+        "guestProgress": { "type": "integer" },
+        "guestReady": { "type": "boolean" },
+        "targetGoal": { "type": "integer" },
+        "sharedRewardGranted": { "type": "boolean" },
+        "invitedUid": { "type": "string" },
+        "participantUids": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomCode", "gameType", "status", "hostUid", "hostName", "hostAvatarId", "hostProgress", "hostReady", "guestUid", "guestName", "guestAvatarId", "guestProgress", "guestReady", "targetGoal", "sharedRewardGranted", "invitedUid", "participantUids", "createdAt", "updatedAt"]
+    },
+    "FriendChat": {
+      "title": "FriendChat",
+      "description": "Shared live chat room between two friends tracking Good Vibe counter and Emotional Friendship level.",
+      "type": "object",
+      "properties": {
+        "participantUids": { "type": "array" },
+        "goodVibePoints": { "type": "integer" },
+        "emotionalLevel": { "type": "integer" },
+        "totalMessages": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participantUids", "goodVibePoints", "emotionalLevel", "totalMessages", "createdAt", "updatedAt"]
+    },
+    "FriendChatMessage": {
+      "title": "FriendChatMessage",
+      "description": "Live chat message between two friends in the Music Visualizer.",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "vibeBoost": { "type": "integer" },
+        "participantUids": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "senderName", "text", "vibeBoost", "participantUids", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "Private user settings and notification preferences."
+    },
+    "/users/{userId}/quotes/{quoteId}": {
+      "schema": { "$ref": "#/entities/QuoteHistoryEntry" },
+      "description": "User quote history and favorites."
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": { "$ref": "#/entities/HabitItem" },
+      "description": "User monthly habits and streaks."
+    },
+    "/users/{userId}/visualizerProfiles/{profileId}": {
+      "schema": { "$ref": "#/entities/VisualizerProfile" },
+      "description": "User custom music visualizer profiles."
+    },
+    "/users/{userId}/friends/{friendUid}": {
+      "schema": { "$ref": "#/entities/FriendLink" },
+      "description": "User accepted friends list."
+    },
+    "/publicProfiles/{userId}": {
+      "schema": { "$ref": "#/entities/PublicProfile" },
+      "description": "Public profile cards for medals, levels, avatars, and friend challenges."
+    },
+    "/friendCodes/{friendCode}": {
+      "schema": { "$ref": "#/entities/FriendCodeLookup" },
+      "description": "Friend code lookup map."
+    },
+    "/friendRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/FriendRequest" },
+      "description": "Friend invitation workflow."
+    },
+    "/gameRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/GameRoom" },
+      "description": "Real-time multiplayer rooms for Climber and Music Focus."
+    },
+    "/friendChats/{chatId}": {
+      "schema": { "$ref": "#/entities/FriendChat" },
+      "description": "Shared live chat state with Good Vibe counter and Emotional Friendship level."
+    },
+    "/friendChats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/FriendChatMessage" },
+      "description": "Live chat messages between friends inside the Music Visualizer."
+    }
+  }
+}

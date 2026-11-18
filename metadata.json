@@ -1,0 +1,6 @@
+{
+  "name": "Vicdaru Project",
+  "description": "App motivacional anime con citas e imagenes aleatorias, visualizador de habitos, minijuego de escalada, visualizador musical adaptativo al enfoque, medallas y multijugador con amigos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
